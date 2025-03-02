@@ -1,5 +1,6 @@
 from enum import Enum
 from htmlnode import LeafNode
+import re
 
 class TextType(Enum):
     TEXT = "text"
@@ -52,7 +53,7 @@ def text_node_to_html_node(text_node: TextNode) -> LeafNode:
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     new_nodes = []
     for node in old_nodes:
-        if node.text_type != text_type.TEXT:
+        if node.text_type != TextType.TEXT:
             new_nodes.append(node)
             continue
         split_parts = node.text.split(delimiter)
@@ -62,6 +63,88 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
         
         for i, part in enumerate(split_parts):
             if part:    
-                new_type = text_type if i % 2 == 1 else text_type.TEXT
+                new_type = text_type if i % 2 == 1 else TextType.TEXT
                 new_nodes.append(TextNode(part, new_type))
     return new_nodes
+
+def extract_markdown_images(text):
+    #image_pattern = r"!\[([^\[\]]*)\]\(([^\(\)]*)\)"
+    return re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
+
+def extract_markdown_links(text):
+    #link_pattern = r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)"
+    return re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
+
+
+def split_nodes_image(old_nodes):
+    new_nodes = []
+    for node in old_nodes:
+        if node.text_type != TextType.TEXT:
+            new_nodes.append(node)
+            continue
+        
+        images = extract_markdown_images(node.text)
+        
+        if not images:
+            new_nodes.append(node)
+            continue 
+        
+        current_text = node.text  
+
+        for alt, url in images:
+            sections = current_text.split(f"![{alt}]({url})", 1) 
+            
+            if sections[0]: 
+                new_nodes.append(TextNode(sections[0], TextType.TEXT))
+
+            new_nodes.append(TextNode(alt, TextType.IMAGE, url)) 
+
+            current_text = sections[1] if len(sections) > 1 else ""
+
+        if current_text: 
+            new_nodes.append(TextNode(current_text, TextType.TEXT))
+            
+    return new_nodes
+
+
+def split_nodes_link(old_nodes):
+    new_nodes = []
+    for node in old_nodes:
+        if node.text_type != TextType.TEXT:
+            new_nodes.append(node)
+            continue
+        
+        links = extract_markdown_links(node.text)
+        
+        if not links:
+            new_nodes.append(node)
+            continue 
+        
+        current_text = node.text  
+
+        for anchor, url in links:
+            sections = current_text.split(f"[{anchor}]({url})", 1) 
+
+            if sections[0]:
+                new_nodes.append(TextNode(sections[0], TextType.TEXT))
+            
+            new_nodes.append(TextNode(anchor, TextType.LINK, url))
+
+            current_text = sections[1] if len(sections) > 1 else ""
+
+        if current_text:
+            new_nodes.append(TextNode(current_text, TextType.TEXT))
+            
+    return new_nodes
+
+    
+def text_to_textnodes(text):
+    nodes = [TextNode(text, TextType.TEXT)]
+
+    nodes = split_nodes_image(nodes)
+    nodes = split_nodes_link(nodes)
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+
+    return nodes
