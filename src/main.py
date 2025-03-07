@@ -4,21 +4,21 @@ import shutil
 
 def copy_static_files(src, dest):
     if os.path.exists(dest):
-        shutil.rmtree(dest)  # Delete the existing public directory
+        shutil.rmtree(dest)  
 
-    os.makedirs(dest, exist_ok=True)  # Recreate public directory
+    os.makedirs(dest, exist_ok=True)  
 
     for item in os.listdir(src):
-        if item.startswith("."):  # Ignore hidden files like .DS_Store
+        if item.startswith("."):  
             continue
 
         src_path = os.path.join(src, item)
         dest_path = os.path.join(dest, item)
 
-        if os.path.isdir(src_path):  # Handle directories first
+        if os.path.isdir(src_path):  
             os.makedirs(dest_path, exist_ok=True)
-            copy_static_files(src_path, dest_path)  # Recursively copy directories
-        elif os.path.isfile(src_path):  # Handle files
+            copy_static_files(src_path, dest_path)  
+        elif os.path.isfile(src_path):  
             shutil.copy(src_path, dest_path)
             print(f"Copied file: {src_path} -> {dest_path}")
 
