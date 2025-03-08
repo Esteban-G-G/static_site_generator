@@ -43,12 +43,27 @@ def generate_page(from_path, template_path, dest_path):
         f.write(final_html)
         print(f"Successfully generated {dest_path}")
 
+def generate_pages_recursive(dir_path_content, template_path, des_dir_path):
+    for entry in os.listdir(dir_path_content):
+        content_entry_path = os.path.join(dir_path_content, entry)
+        dest_entry_path = os.path.join(des_dir_path, entry)
+
+        if os.path.isdir(content_entry_path):
+            os.makedirs(dest_entry_path, exist_ok=True)
+            generate_pages_recursive(content_entry_path, template_path, dest_entry_path)
+
+        elif entry.endswith(".md"):
+            dest_html_path = os.path.join(des_dir_path, "index.html")
+            generate_page(content_entry_path, template_path, dest_html_path)
+
+
 def main():
     static_dir = "static"
     public_dir = "public"
-    content_md = "content/index.md"
+    #content_md = "content/index.md"
     template_html = "template.html"
-    output_html = "public/index.html"
+    #output_html = "public/index.html"
+    content_dir = "content"
 
     if os.path.exists(public_dir):
         shutil.rmtree(public_dir)
@@ -56,8 +71,9 @@ def main():
     print("Copying static files...")
     copy_static_files(static_dir, public_dir)
 
-    print("Generating homepage...")
-    generate_page(content_md, template_html, output_html)
+    print("Generating site pages...")
+    #generate_page(content_md, template_html, output_html)
+    generate_pages_recursive(content_dir, template_html, public_dir)
         
 # previous iterations of main.py for testing. 
     #print ("starting static file copy...")
